@@ -8,9 +8,10 @@ class MenuItemAdmin(admin.ModelAdmin):
     """
     Admin configuration for MenuItem model.
     """
-    list_display = ('title', 'parent')
+    list_display = ('pk', 'title', 'parent')
     list_filter = ('menu',)
     search_fields = ('title', 'slug')
+    ordering = ('pk',)
 
     fieldsets = (
         ('Add new item', {
