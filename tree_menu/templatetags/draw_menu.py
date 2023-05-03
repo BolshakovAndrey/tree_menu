@@ -12,28 +12,28 @@ register = template.Library()
 @register.inclusion_tag('tree_menu/tree_menu.html', takes_context=True)
 def draw_menu(context: Context, menu: str) -> Dict[str, Any]:
     """
-    Пользовательский тег шаблона для отображения древовидного меню
-    :param context: запрос пользователя и другая информация
-    :param menu: название меню
-    :return: словарь, который будет использоваться для рендеринга шаблона tree_menu/tree_menu.html
+    Custom template tag for rendering a tree menu.
+    :param context: User request and other information.
+    :param menu: The menu name.
+    :return: A dictionary that will be used to render the tree_menu/tree_menu.html template.
     """
 
     try:
-        # Получаем все пункты меню для данного menu
+        # Get all menu items for the given menu
         items = MenuItem.objects.filter(menu__title=menu)
         items_values = items.values()
 
-        # Получаем корневые пункты меню (без родителя)
+        # Get the root menu items (without parent)
         root_item = [item for item in items_values.filter(parent=None)]
 
-        # Определяем ID выбранного пункта меню из параметров запроса
+        # Determine the ID of the selected menu item from the request parameters
         selected_item_id = int(context['request'].GET[menu])
         selected_item = items.get(id=selected_item_id)
 
-        # Получаем список ID выбранных пунктов меню
+        # Get a list of IDs for the selected menu items
         selected_item_id_list = get_selected_item_id_list(selected_item, root_item, selected_item_id)
 
-        # Добавляем дочерние элементы для каждого выбранного пункта меню
+        # Add child items for each selected menu item
         for item in root_item:
             if item['id'] in selected_item_id_list:
                 item['child_items'] = get_child_items(items_values, item['id'], selected_item_id_list)
@@ -41,14 +41,14 @@ def draw_menu(context: Context, menu: str) -> Dict[str, Any]:
         result_dict = {'items': root_item}
 
     except (KeyError, ObjectDoesNotExist):
-        # В случае ошибки возвращаем список пунктов меню без родительских элементов
+        # In case of an error, return a list of menu items without parent items
         result_dict = {
             'items': [
                 item for item in MenuItem.objects.filter(menu__title=menu, parent=None).values()
             ]
         }
 
-    # Добавляем название меню и дополнительную строку запроса в словарь result_dict
+    # Add the menu name and additional query string to the result_dict dictionary
     result_dict['menu'] = menu
     result_dict['other_querystring'] = build_querystring(context, menu)
 
@@ -57,37 +57,37 @@ def draw_menu(context: Context, menu: str) -> Dict[str, Any]:
 
 def build_querystring(context: Context, menu: str) -> str:
     """
-    Cоздает строку запроса (querystring) на основе текущего контекста запроса
-    :param context: текущий контекст
-    :param menu: менюшка
-    :return: собранную строку запроса
+    Builds a query string based on the current request context.
+    :param context: The current context.
+    :param menu: The menu.
+    :return: The built query string.
     """
 
-    # Инициализация списка для хранения аргументов строки запроса
+    # Initialize a list to store query string arguments
     querystring_args = []
 
-    # Обход всех параметров текущего запроса
+    # Loop through all parameters of the current request
     for key in context['request'].GET:
-        # Если ключ текущего параметра не совпадает с переданным параметром 'menu'
+        # If the key of the current parameter does not match the passed 'menu' parameter
         if key != menu:
-            # Добавление пары "ключ=значение" в список аргументов строки запроса
-            querystring_args.append(key + '=' + context['request'].GET[key])
+            # Add the "key=value" pair to the query string arguments list
+            querystring_args.append(f"{key}={context['request'].GET[key]}")
 
-    # Соединение аргументов из списка в одну строку запроса, разделенную символом '&'
-    querystring = ('&').join(querystring_args)
+    # Join the arguments from the list into a single query string, separated by the '&' character
+    querystring = '&'.join(querystring_args)
 
-    # Возвращаю сформированные строки запроса
+    # Return the built query strings
     return querystring
 
 
 def get_child_items(items_values, current_item_id, selected_item_id_list):
     """
-    Возвращает список дочерних элементов для заданного идентификатора элемента меню.
+    Returns a list of child items for the given menu item ID.
 
-    :param items: список всех элементов меню
-    :param current_item_id: идентификатор элемента меню, для которого нужно получить дочерние элементы
-    :param selected_item_id_list: список идентификаторов выбранных элементов меню
-    :return: список дочерних элементов для заданного идентификатора элемента меню
+    :param items_values: A list of all menu items.
+    :param current_item_id: The ID of the menu item for which to get child items.
+    :param selected_item_id_list: A list of IDs for the selected menu items.
+    :return: A list of child items for the given menu item ID.
     """
     item_list = [item for item in items_values.filter(parent_id=current_item_id)]
     for item in item_list:
@@ -98,12 +98,12 @@ def get_child_items(items_values, current_item_id, selected_item_id_list):
 
 def get_selected_item_id_list(parent: MenuItem, primary_item: List[MenuItem], selected_item_id: int) -> List[int]:
     """
-    Возвращает список идентификаторов выбранных элементов меню, начиная от родительского элемента до текущего.
+    Returns a list of IDs for the selected menu items, starting from the parent item to the current one.
 
-    :param parent: Родительский элемент меню
-    :param primary_item: список корневых элементов меню
-    :param selected_item_id: идентификатор выбранного элемента меню
-    :return: список идентификаторов выбранных элементов меню
+    :param parent: The parent menu item.
+    :param primary_item: A list of root menu items.
+    :param selected_item_id: The ID of the selected menu item.
+    :return: A list of IDs for the selected menu items.
     """
     selected_item_id_list = []
 
